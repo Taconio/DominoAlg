@@ -1,6 +1,4 @@
 from typing import List, Tuple, Literal
-
-
 # Domino Game imlpementation, for now just making a simple functional domino game
 
 # TODO:
@@ -23,6 +21,7 @@ class Player:
 
 
 def main():
+    #start plyers
     
 
 if __name__ == "__main__":
