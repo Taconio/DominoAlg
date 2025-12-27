@@ -1,11 +1,14 @@
-from typing import List, Tuple, Literal
+from typing import List, Tuple, Literal, Optional
 from collections import deque
+from dataclasses import dataclass, field
+import random
 
 # Domino Game imlpementation, for now just making a simple functional domino game
 
 # TODO today:
 #  - Board representation  
 
+# Tile data types
 Tile = Tuple[int, int]
 Side = Literal["L", "R"]
 
@@ -31,12 +34,46 @@ class Board:
 
     def is_empty(self) -> bool:
         return len(self.chain) == 0
+    
+    def place(self, oriented_tile: Tile, side: Side) -> None:
+        a, b = oriented_tile
+        
+        #TODO start with player that has the double 6 tile if game 1
+        if (self.is_empty()):
+            self.chain.append(oriented_tile)
+            self.left_end, self.right_end = a, b
+            return
+        
+        
+        #TODO implement further rounds
+        
+        return
 
+# GM class, keep game info
+class DominoGame:
+    
+    players: list[Player]
+    board: Board = field(default_factory=Board)
+    turn: int = 0
+    
+    def deal(self) -> None:
+        tiles = make_set_double6()
+        random.shuffle(tiles)
+        for i, p in enumerate(self.players):
+            p.hand = tiles[i*7:(i+1)*7]
+            
+        return
+    
+    # TODO play a turn        
+    def play_turn() -> None :
+        return
+        
+    
 
 
 
 # TODO: Track games
-class Game:
+# class Game:
     
 
 
@@ -51,6 +88,7 @@ def main():
         players.append(p)
 
     #Setting Board
+    
     
 
 if __name__ == "__main__":
