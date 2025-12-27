@@ -1,10 +1,8 @@
 from typing import List, Tuple, Literal
 # Domino Game imlpementation, for now just making a simple functional domino game
 
-# TODO:
-#  - Tile class, tuple
-#  - Player Class
-#  - Board 
+# TODO today:
+#  - Board representation  
 
 Tile = Tuple[int, int]
 Side = Literal["L", "R"]
@@ -21,7 +19,16 @@ class Player:
 
 
 def main():
-    #start plyers
+    #Setting plyers
+    players: list[Player] = []
+    for i in range(4):
+        p = Player()
+        p.name = f"Player {i + 1}"
+        p.team = 0 if i < 2 else 1
+        p.hand = []
+        players.append(p)
+
+    #Setting Board
     
 
 if __name__ == "__main__":
