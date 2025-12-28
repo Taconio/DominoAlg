@@ -66,8 +66,18 @@ class Board:
             self.left_end, self.right_end = a, b
             return
         
-        
         #TODO implement further rounds
+        if side == "L":
+            if b != self.left_end:
+                raise ValueError("Tile does not match left end")
+            self.chain.appendleft(oriented_tile)
+            self.left_end = a
+                
+        elif side == "R":
+            if a != self.right_end:
+                raise ValueError("Tile does not match right end")
+            self.chain.append(oriented_tile)
+            self.right_end = b
         
         return
 
@@ -88,16 +98,8 @@ class DominoGame:
     
     # TODO play a turn        
     def play_turn() -> None :
-        return
         
-    
-
-
-
-# TODO: Track games
-# class Game:
-    
-
+        return
 
 def main():
     #Setting plyers
