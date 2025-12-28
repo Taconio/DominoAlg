@@ -35,6 +35,28 @@ class Board:
     def is_empty(self) -> bool:
         return len(self.chain) == 0
     
+    def legal_moves(self, hand: list[Tile]) -> List[Tuple[Tile, Side]]:
+        moves: List[Tuple[Tile, Side]] = []
+        
+        if self.is_empty():
+            for tile in hand:
+                moves.append((tile, "L"))
+                moves.append((tile, "R"))
+            return moves
+        
+        for tile in hand:
+            a, b = tile
+            if a == self.left_end:
+                moves.append((flip(tile), "L"))
+            if b == self.left_end:
+                moves.append((tile, "L"))
+            if a == self.right_end:
+                moves.append((tile, "R"))
+            if b == self.right_end:
+                moves.append((flip(tile), "R"))
+        
+        return moves
+    
     def place(self, oriented_tile: Tile, side: Side) -> None:
         a, b = oriented_tile
         
