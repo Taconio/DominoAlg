@@ -20,6 +20,9 @@ def make_set_double6() -> List[Tile]:
 def flip(t: Tile) -> Tile:
     return (t[1], t[0])
 
+def pip_sum(t: Tile) -> int:
+    return t[0] + t[1]
+
 # Used to hold info about the player and hand
 class Player:
     name: str
@@ -27,6 +30,7 @@ class Player:
     hand: list[Tile]
 
 # TODO: placing a piece, checking for an empty list
+@dataclass
 class Board:
     chain: deque = field(default_factory=deque)
     left_end: Optional[int] = None
@@ -35,26 +39,28 @@ class Board:
     def is_empty(self) -> bool:
         return len(self.chain) == 0
     
-    def legal_moves(self, hand: list[Tile]) -> List[Tuple[Tile, Side]]:
-        moves: List[Tuple[Tile, Side]] = []
+    def legal_moves(self, hand: list[Tile]) -> List[Tuple[Tile, Side, Tile]]:
+        moves = []
         
         if self.is_empty():
-            for tile in hand:
-                moves.append((tile, "L"))
-                moves.append((tile, "R"))
+            # any tile can start; oriented arbitrarily
+            for t in hand:
+                moves.append((t, "L", t))
             return moves
-        
-        for tile in hand:
-            a, b = tile
+
+        for t in hand:
+            a, b = t
+            # try left
             if a == self.left_end:
-                moves.append((flip(tile), "L"))
-            if b == self.left_end:
-                moves.append((tile, "L"))
+                moves.append((t, "L", flip(t)))
+            elif b == self.left_end:
+                moves.append((t, "L", t))
+
+            # try right
             if a == self.right_end:
-                moves.append((tile, "R"))
-            if b == self.right_end:
-                moves.append((flip(tile), "R"))
-        
+                moves.append((t, "R", t))
+            elif b == self.right_end:
+                moves.append((t, "R", flip(t)))
         return moves
     
     def place(self, oriented_tile: Tile, side: Side) -> None:
@@ -82,11 +88,13 @@ class Board:
         return
 
 # GM class, keep game info
+@dataclass
 class DominoGame:
     
     players: list[Player]
     board: Board = field(default_factory=Board)
     turn: int = 0
+    conseccutive_passes: int = 0
     
     def deal(self) -> None:
         tiles = make_set_double6()
@@ -96,10 +104,47 @@ class DominoGame:
             
         return
     
+    def choose_first_player(self) -> int:
+        # Find player with the double six
+        for i, p in enumerate(self.players):
+            if (6, 6) in p.hand:
+                return i
+        return 0  # Fallback, should not happen in standard dominoes
+    
+    def team_pip_total(self, team_id: int) -> int:
+        return sum(pip_sum(t) for pl in self.players if pl.team == team_id for t in pl.hand)
+    
+    def check_end_conditions(self) -> Optional[int]:
+        for pl in self.players:
+            if len(pl.hand) == 0:
+                return pl.team
+
+        if self.consecutive_passes >= len(self.players):
+            t0 = self.team_pip_total(0)
+            t1 = self.team_pip_total(1)
+            if t0 < t1:
+                return 0
+            if t1 < t0:
+                return 1
+            return -1  # tie
+        return None
+    
     # TODO play a turn        
-    def play_turn() -> None :
+    def play_turn(self) -> None:
+        pl = self.players[self.turn]
+        legal_moves = self.board.legal_moves(pl.hand)
         
-        return
+        if not legal_moves:
+            self.consecutive_passes += 1
+            self.turn = (self.turn + 1) % len(self.players)
+            return
+        
+        # For now, just play the first legal move
+        original, side, oriented_tile = legal_moves[0]
+        self.board.place(oriented_tile, side)
+        pl.hand.remove(original)
+        self.consecutive_passes = 0
+        self.turn = (self.turn + 1) % len(self.players)
 
 def main():
     #Setting plyers
@@ -112,8 +157,20 @@ def main():
         players.append(p)
 
     #Setting Board
+    GM = DominoGame(players=players)
+    GM.deal()
+    GM.turn = GM.choose_first_player()
     
-    
+    winner = None
+    while winner is None:
+        GM.play_turn()
+        print(f"player: {GM.players[GM.turn].name}, board: {list(GM.board.chain)}")
+        winner = GM.check_end_conditions()
+        
+    if winner == -1:
+        print("The game is a tie!")
+    else:
+        print(f"Team {winner} wins! Total Pips: {GM.team_pip_total(winner)} ")
 
 if __name__ == "__main__":
     main()
