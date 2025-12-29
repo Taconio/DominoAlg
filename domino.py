@@ -1,4 +1,4 @@
-from typing import List, Tuple, Literal, Optional
+from typing import Protocol, List, Tuple, Literal, Optional
 from collections import deque
 from dataclasses import dataclass, field
 import random
@@ -6,11 +6,12 @@ import random
 # Domino Game imlpementation, for now just making a simple functional domino game
 
 # TODO today:
-#  - Board representation  
+#  - Implement heuristic for choosing moves  
 
 # Tile data types
 Tile = Tuple[int, int]
 Side = Literal["L", "R"]
+Move = Tuple[Tile, Side, Tile]
 
 # Helpers
 def make_set_double6() -> List[Tile]:
@@ -23,11 +24,35 @@ def flip(t: Tile) -> Tile:
 def pip_sum(t: Tile) -> int:
     return t[0] + t[1]
 
+# Heuristic functions
+class Heuristic(Protocol):
+    def choose_move(self, player: "Player", board: "Board", legal_moves: List[Move]) -> Move: ...
+
+@dataclass(frozen=True)
+class FirstLegalHeuristic:
+    def choose_move(self, player: "Player", board: "Board", legal_moves: List[Move]) -> Move:
+        return legal_moves[0]
+
+@dataclass(frozen=True)
+class RandomHeuristic:
+    rng: random.Random = field(default_factory=random.Random)
+
+    def choose_move(self, player: "Player", board: "Board", legal_moves: List[Move]) -> Move:
+        return self.rng.choice(legal_moves)
+
+@dataclass(frozen=True)
+class MaxPipSumHeuristic:
+    def choose_move(self, player: "Player", board: "Board", legal_moves: List[Move]) -> Move:
+        # pick the move whose original tile has highest pip sum
+        return max(legal_moves, key=lambda m: pip_sum(m[0]))
+
 # Used to hold info about the player and hand
+@dataclass
 class Player:
     name: str
     team: int
     hand: list[Tile]
+    heuristic: Heuristic = field(default_factory=FirstLegalHeuristic)
 
 # TODO: placing a piece, checking for an empty list
 @dataclass
@@ -72,7 +97,6 @@ class Board:
             self.left_end, self.right_end = a, b
             return
         
-        #TODO implement further rounds
         if side == "L":
             if b != self.left_end:
                 raise ValueError("Tile does not match left end")
@@ -94,7 +118,7 @@ class DominoGame:
     players: list[Player]
     board: Board = field(default_factory=Board)
     turn: int = 0
-    conseccutive_passes: int = 0
+    consecutive_passes: int = 0
     
     def deal(self) -> None:
         tiles = make_set_double6()
@@ -129,18 +153,16 @@ class DominoGame:
             return -1  # tie
         return None
     
-    # TODO play a turn        
     def play_turn(self) -> None:
         pl = self.players[self.turn]
-        legal_moves = self.board.legal_moves(pl.hand)
-        
+        legal_moves: List[Move] = self.board.legal_moves(pl.hand)
+
         if not legal_moves:
             self.consecutive_passes += 1
             self.turn = (self.turn + 1) % len(self.players)
             return
-        
-        # For now, just play the first legal move
-        original, side, oriented_tile = legal_moves[0]
+
+        original, side, oriented_tile = pl.heuristic.choose_move(pl, self.board, legal_moves)
         self.board.place(oriented_tile, side)
         pl.hand.remove(original)
         self.consecutive_passes = 0
@@ -148,13 +170,12 @@ class DominoGame:
 
 def main():
     #Setting plyers
-    players: list[Player] = []
-    for i in range(4):
-        p = Player()
-        p.name = f"Player {i + 1}"
-        p.team = 0 if i < 2 else 1
-        p.hand = []
-        players.append(p)
+    players: list[Player] = [
+        Player(name="Player 1", team=0, heuristic=FirstLegalHeuristic()),
+        Player(name="Player 2", team=0, heuristic=FirstLegalHeuristic()),
+        Player(name="Player 3", team=1, heuristic=FirstLegalHeuristic()),
+        Player(name="Player 4", team=1, heuristic=FirstLegalHeuristic()),
+    ]
 
     #Setting Board
     GM = DominoGame(players=players)
